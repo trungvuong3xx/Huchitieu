@@ -13,14 +13,16 @@ import {
   Edit3,
   Save,
   X,
+  LayoutGrid,
 } from 'lucide-react';
 import { db } from '../db/database';
 import { useAppStore } from '../store/useAppStore';
 import { syncWithGoogleSheets, exportBackupJSON, importBackupJSON } from '../services/syncEngine';
 import { formatVND, generateId } from '../utils/formatters';
-import type { WalletType, Wallet } from '../types';
+import type { WalletType, Wallet, Category, JarCode } from '../types';
 
-const AVATAR_OPTIONS = ['👤', '👨🏻', '👩🏻', '👶🏻', '爷爷', '👵🏻', '🏡', '⭐'];
+const AVATAR_OPTIONS = ['👤', '👨🏻', '👩🏻', '👶🏻', '👵🏻', '🏡', '⭐'];
+const CATEGORY_ICONS = ['🛒', '🍜', '☕', '👶🏻', '⚡', '🛵', '🛍️', '💊', '🧧', '🍕', '💎', '🏠', '📚', '✈️', '⚽', '🐶', '💰', '💵', '🎉', '📈'];
 
 export const SettingsTab: React.FC = () => {
   const {
@@ -35,6 +37,7 @@ export const SettingsTab: React.FC = () => {
 
   const wallets = useLiveQuery(() => db.wallets.filter((w) => !w.is_archived).toArray(), []) || [];
   const members = useLiveQuery(() => db.members.toArray(), []) || [];
+  const categories = useLiveQuery(() => db.categories.orderBy('sort_order').toArray(), []) || [];
   const pendingCount = useLiveQuery(() => db.transactions.where('sync_status').equals('PENDING').count(), []) || 0;
 
   // States cho Thành viên
@@ -54,6 +57,16 @@ export const SettingsTab: React.FC = () => {
   const [editWBal, setEditWBal] = useState('');
   const [editWType, setEditWType] = useState<WalletType>('BANK');
   const [editWOwner, setEditWOwner] = useState('');
+
+  // States cho Danh mục (Categories)
+  const [catFilterType, setCatFilterType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('🛒');
+  const [newCatJar, setNewCatJar] = useState<JarCode>('NEC');
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState('');
+  const [editCatIcon, setEditCatIcon] = useState('🛒');
+  const [editCatJar, setEditCatJar] = useState<JarCode>('NEC');
 
   // State cho Google Sheets URL
   const [urlInput, setUrlInput] = useState(scriptUrl);
@@ -146,6 +159,50 @@ export const SettingsTab: React.FC = () => {
     syncWithGoogleSheets(true).catch(() => {});
   };
 
+  // --- XỬ LÝ DANH MỤC (CATEGORIES) ---
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    await db.categories.add({
+      id: generateId('cat'),
+      name: newCatName.trim(),
+      type: catFilterType,
+      jar_code: newCatJar,
+      icon: newCatIcon,
+      color: catFilterType === 'INCOME' ? '#10b981' : '#3b82f6',
+      sort_order: categories.length + 1,
+      is_active: true,
+    });
+    setNewCatName('');
+    showToast(`✅ Đã thêm danh mục "${newCatName.trim()}"`);
+    syncWithGoogleSheets(true).catch(() => {});
+  };
+
+  const startEditCategory = (cat: Category) => {
+    setEditingCatId(cat.id);
+    setEditCatName(cat.name);
+    setEditCatIcon(cat.icon);
+    setEditCatJar(cat.jar_code);
+  };
+
+  const handleSaveEditCategory = async (id: string) => {
+    if (!editCatName.trim()) return;
+    await db.categories.update(id, {
+      name: editCatName.trim(),
+      icon: editCatIcon,
+      jar_code: editCatJar,
+    });
+    setEditingCatId(null);
+    showToast(`✅ Đã cập nhật danh mục "${editCatName.trim()}"`);
+    syncWithGoogleSheets(true).catch(() => {});
+  };
+
+  const handleDeleteCategory = async (cat: Category) => {
+    await db.categories.delete(cat.id);
+    showToast(`🗑️ Đã xóa danh mục "${cat.name}"`);
+    syncWithGoogleSheets(true).catch(() => {});
+  };
+
   // --- ĐỒNG BỘ & SAO LƯU ---
   const handleSaveUrlAndSync = async () => {
     setScriptUrl(urlInput);
@@ -181,18 +238,20 @@ export const SettingsTab: React.FC = () => {
     }
   };
 
+  const displayedCategories = categories.filter((c) => c.type === catFilterType);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24 lg:pb-10 items-start">
-      {/* Cột Trái (6/12): Quản lý Thành Viên / Người Dùng & Quản lý Nguồn Tiền */}
+      {/* Cột Trái (6/12): Quản lý Người Dùng & Quản lý Nguồn Tiền */}
       <div className="lg:col-span-6 space-y-6">
-        {/* 1. Quản lý Người Dùng / Thành Viên (Tự đặt tên, không mặc định Vợ/Chồng) */}
+        {/* 1. Quản lý Người Dùng */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6">
           <div className="flex items-center gap-2.5 mb-2">
             <Users className="w-5 h-5 text-emerald-400" />
             <h3 className="text-base sm:text-lg font-bold text-white">Danh Sách Người Dùng ({members.length})</h3>
           </div>
           <p className="text-sm text-slate-400 mb-4">
-            Tự đặt tên người sử dụng (VD: Vương, Thảo, Quỹ Chung...). Bấm vào tên để chọn làm người đang thao tác trên thiết bị này.
+            Tự đặt tên người sử dụng. Bấm vào tên để chọn làm người đang thao tác trên thiết bị này.
           </p>
 
           {members.length > 0 && (
@@ -298,7 +357,7 @@ export const SettingsTab: React.FC = () => {
               type="text"
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
-              placeholder="Nhập tên (VD: Vương, Thảo...)"
+              placeholder="Nhập tên (VD: Ba Thỏ, Mẹ Thỏ...)"
               className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none"
             />
             <button
@@ -310,14 +369,14 @@ export const SettingsTab: React.FC = () => {
           </form>
         </div>
 
-        {/* 2. Quản lý Nguồn Tiền / Ví (Thêm, Sửa, Xóa toàn quyền, không tạo mặc định) */}
+        {/* 2. Quản lý Nguồn Tiền / Ví */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6">
           <div className="flex items-center gap-2.5 mb-2">
             <WalletIcon className="w-5 h-5 text-sky-400" />
             <h3 className="text-base sm:text-lg font-bold text-white">Quản Lý Nguồn Tiền / Ví ({wallets.length})</h3>
           </div>
           <p className="text-sm text-slate-400 mb-4">
-            Tạo các nguồn tiền thực tế của bạn (Tiền mặt, Ngân hàng, Ví điện tử). Có thể sửa tên, sửa số dư hoặc xóa bất cứ lúc nào.
+            Tạo các nguồn tiền thực tế của bạn (Tiền mặt, Ngân hàng, Ví điện tử). Có thể sửa hoặc xóa bất cứ lúc nào.
           </p>
 
           {wallets.length > 0 && (
@@ -431,7 +490,6 @@ export const SettingsTab: React.FC = () => {
             </div>
           )}
 
-          {/* Form Thêm Nguồn Tiền Mới */}
           <form onSubmit={handleAddWallet} className="space-y-3 pt-3 border-t border-slate-800">
             <div className="text-sm font-bold text-slate-200">Thêm nguồn tiền mới:</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -488,9 +546,159 @@ export const SettingsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Cột Phải (6/12): Đồng Bộ Google Sheets & Sao Lưu Dữ Liệu */}
+      {/* Cột Phải (6/12): Quản lý Danh Mục Thu Chi & Đồng Bộ Google Sheets */}
       <div className="lg:col-span-6 space-y-6">
-        {/* Kết nối & Đồng bộ 2 chiều Google Sheets */}
+        {/* 3. Quản lý Danh Mục Thu / Chi (Thêm, Sửa, Xóa tùy ý) */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <LayoutGrid className="w-5 h-5 text-amber-400" />
+              <h3 className="text-base sm:text-lg font-bold text-white">Quản Lý Danh Mục Thu / Chi</h3>
+            </div>
+
+            <div className="flex bg-slate-800 p-1 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => setCatFilterType('EXPENSE')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  catFilterType === 'EXPENSE' ? 'bg-rose-500 text-white' : 'text-slate-400'
+                }`}
+              >
+                Chi tiêu ({categories.filter((c) => c.type === 'EXPENSE').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setCatFilterType('INCOME')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  catFilterType === 'INCOME' ? 'bg-emerald-500 text-white' : 'text-slate-400'
+                }`}
+              >
+                Thu nhập ({categories.filter((c) => c.type === 'INCOME').length})
+              </button>
+            </div>
+          </div>
+
+          <p className="text-sm text-slate-400 mb-4">
+            Thêm mới, đổi tên, đổi biểu tượng hoặc xóa bất kỳ danh mục nào theo nhu cầu của gia đình bạn.
+          </p>
+
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-1 mb-4">
+            {displayedCategories.map((cat) => {
+              const isEditing = editingCatId === cat.id;
+              return (
+                <div
+                  key={cat.id}
+                  className="px-3.5 py-2.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-2"
+                >
+                  {!isEditing ? (
+                    <>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-xl">{cat.icon}</span>
+                        <span className="text-sm font-bold text-slate-100 truncate">{cat.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => startEditCategory(cat)}
+                          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                          title="Sửa danh mục"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat)}
+                          className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                          title="Xóa danh mục"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2 w-full">
+                      <select
+                        value={editCatIcon}
+                        onChange={(e) => setEditCatIcon(e.target.value)}
+                        className="bg-slate-800 border border-slate-700 rounded-xl px-2 py-1.5 text-base"
+                      >
+                        {CATEGORY_ICONS.map((ic) => (
+                          <option key={ic} value={ic}>
+                            {ic}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={editCatName}
+                        onChange={(e) => setEditCatName(e.target.value)}
+                        className="flex-1 bg-slate-800 border border-emerald-500 rounded-xl px-3 py-1.5 text-sm font-bold text-white focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveEditCategory(cat.id)}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs cursor-pointer"
+                      >
+                        Lưu
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingCatId(null)}
+                        className="p-1.5 rounded-xl bg-slate-800 text-slate-400 cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Form Thêm Danh Mục Mới */}
+          <form onSubmit={handleAddCategory} className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-800">
+            <select
+              value={newCatIcon}
+              onChange={(e) => setNewCatIcon(e.target.value)}
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-base"
+            >
+              {CATEGORY_ICONS.map((ic) => (
+                <option key={ic} value={ic}>
+                  {ic}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              placeholder={`Tên danh mục ${catFilterType === 'EXPENSE' ? 'chi tiêu' : 'thu nhập'} mới...`}
+              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none"
+            />
+            {catFilterType === 'EXPENSE' && (
+              <select
+                value={newCatJar}
+                onChange={(e) => setNewCatJar(e.target.value as JarCode)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs sm:text-sm text-slate-200"
+              >
+                <option value="NEC">🏠 Thiết yếu</option>
+                <option value="EDUC">📚 Giáo dục</option>
+                <option value="PLAY">🎉 Hưởng thụ</option>
+                <option value="FFA">📈 Đầu tư</option>
+                <option value="LTSS">💎 Tiết kiệm</option>
+                <option value="GIVE">🎁 Cho đi</option>
+              </select>
+            )}
+            <button
+              type="submit"
+              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" /> Thêm Mục
+            </button>
+          </form>
+        </div>
+
+        {/* 4. Kết nối & Đồng bộ 2 chiều Google Sheets */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
@@ -502,11 +710,7 @@ export const SettingsTab: React.FC = () => {
             </span>
           </div>
 
-          <p className="text-sm text-slate-400 mb-4">
-            Đường dẫn <strong>Web App URL</strong> từ file Google Apps Script để tự động lưu và đồng bộ thu chi:
-          </p>
-
-          <div className="space-y-3">
+          <div className="space-y-3 mt-3">
             <input
               type="url"
               value={urlInput}
@@ -533,17 +737,14 @@ export const SettingsTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Sao lưu & Phục hồi */}
+        {/* 5. Sao lưu & Phục hồi */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6">
           <div className="flex items-center gap-2.5 mb-2">
             <ShieldCheck className="w-5 h-5 text-emerald-400" />
             <h3 className="text-base sm:text-lg font-bold text-white">Sao Lưu & Phục Hồi (.JSON)</h3>
           </div>
-          <p className="text-sm text-slate-400 mb-4">
-            Xuất toàn bộ giao dịch, nguồn tiền và cài đặt ra file <code>.JSON</code> hoặc khôi phục lại từ file đã lưu.
-          </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mt-3">
             <button
               type="button"
               onClick={handleExportJSON}

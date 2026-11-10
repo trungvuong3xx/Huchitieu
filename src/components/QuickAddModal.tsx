@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { X, Delete, Check, ArrowRightLeft, Calendar, FileText, Sparkles } from 'lucide-react';
+import { X, Delete, Check, ArrowRightLeft, Calendar, FileText, Sparkles, Plus, Settings2, Trash2 } from 'lucide-react';
 import { db } from '../db/database';
 import { useAppStore } from '../store/useAppStore';
 import { formatVND, getTodayLocalISO, generateId } from '../utils/formatters';
 import { syncWithGoogleSheets } from '../services/syncEngine';
-import type { TransactionType } from '../types';
+import type { TransactionType, JarCode } from '../types';
+
+const QUICK_CATEGORY_ICONS = ['🛒', '🍜', '☕', '👶🏻', '⚡', '🛵', '🛍️', '💊', '🧧', '🍕', '💎', '🏠', '📚', '✈️', '⚽', '🐶', '💰', '💵', '🎉', '📈'];
 
 export const QuickAddModal: React.FC = () => {
   const { isQuickAddOpen, closeQuickAdd, currentMember, setCurrentMember, showToast } = useAppStore();
@@ -23,11 +25,20 @@ export const QuickAddModal: React.FC = () => {
   const [note, setNote] = useState<string>('');
   const [autoSaveOnCategoryTap, setAutoSaveOnCategoryTap] = useState<boolean>(false);
 
+  // Chế độ Thêm / Xóa danh mục nhanh ngay trong hộp thoại
+  const [isManageCatMode, setIsManageCatMode] = useState<boolean>(false);
+  const [isAddingCat, setIsAddingCat] = useState<boolean>(false);
+  const [newCatName, setNewCatName] = useState<string>('');
+  const [newCatIcon, setNewCatIcon] = useState<string>('🛒');
+  const [newCatJar, setNewCatJar] = useState<JarCode>('NEC');
+
   useEffect(() => {
     if (!isQuickAddOpen) return;
     setDate(getTodayLocalISO());
     setExpression('');
     setNote('');
+    setIsManageCatMode(false);
+    setIsAddingCat(false);
 
     const preferredWallet = wallets.find((w) => w.owner_id === currentMember) || wallets[0];
     if (preferredWallet) {
@@ -84,6 +95,34 @@ export const QuickAddModal: React.FC = () => {
     setExpression((prev) => prev + key);
   };
 
+  const handleQuickAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const newId = generateId('cat');
+    const targetType = txType === 'INCOME' ? 'INCOME' : 'EXPENSE';
+    await db.categories.add({
+      id: newId,
+      name: newCatName.trim(),
+      type: targetType,
+      jar_code: newCatJar,
+      icon: newCatIcon,
+      color: targetType === 'INCOME' ? '#10b981' : '#3b82f6',
+      sort_order: categories.length + 1,
+      is_active: true,
+    });
+    setSelectedCategoryId(newId);
+    setNewCatName('');
+    setIsAddingCat(false);
+    showToast(`✅ Đã thêm danh mục "${newCatName.trim()}"`);
+    syncWithGoogleSheets(true).catch(() => {});
+  };
+
+  const handleQuickDeleteCategory = async (catId: string, catName: string) => {
+    await db.categories.delete(catId);
+    showToast(`🗑️ Đã xóa danh mục "${catName}"`);
+    syncWithGoogleSheets(true).catch(() => {});
+  };
+
   const handleSave = async (overrideCatId?: string) => {
     const finalAmount = calculatedAmount;
     if (finalAmount <= 0) {
@@ -131,7 +170,7 @@ export const QuickAddModal: React.FC = () => {
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !isAddingCat) {
           e.preventDefault();
           handleSave();
         }
@@ -163,7 +202,7 @@ export const QuickAddModal: React.FC = () => {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isQuickAddOpen, expression, calculatedAmount, selectedCategoryId, selectedWalletId, toWalletId, date, note, txType]);
+  }, [isQuickAddOpen, isAddingCat, expression, calculatedAmount, selectedCategoryId, selectedWalletId, toWalletId, date, note, txType]);
 
   if (!isQuickAddOpen) return null;
 
@@ -222,15 +261,33 @@ export const QuickAddModal: React.FC = () => {
 
         {/* Body: Mobile dọc | Desktop chia 2 cột ngang */}
         <div className="grid grid-cols-1 md:grid-cols-12 flex-1 overflow-y-auto md:overflow-hidden">
-          {/* Cột Trái: Chọn Danh mục & Tuỳ chọn tối giản */}
+          {/* Cột Trái: Chọn Danh mục + Thêm/Xóa Danh mục ngay tại chỗ */}
           <div className="md:col-span-7 flex flex-col justify-between md:border-r border-slate-800 p-4 md:p-6 overflow-y-auto">
             <div>
               {txType !== 'TRANSFER' ? (
                 <>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">
-                      Chọn danh mục
-                    </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">
+                        Chọn danh mục ({filteredCategories.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsManageCatMode(!isManageCatMode);
+                          setIsAddingCat(false);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer ${
+                          isManageCatMode
+                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                            : 'bg-slate-800 text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        <Settings2 className="w-3.5 h-3.5" />
+                        {isManageCatMode ? 'Xong' : 'Sửa / Xóa'}
+                      </button>
+                    </div>
+
                     <label className="flex items-center gap-1.5 text-xs sm:text-sm text-emerald-400 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -241,33 +298,119 @@ export const QuickAddModal: React.FC = () => {
                       <Sparkles className="w-3.5 h-3.5" /> Chạm là Lưu ngay
                     </label>
                   </div>
+
+                  {/* Lưới danh mục + Nút "+ Thêm mới" ở cuối */}
                   <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
                     {filteredCategories.map((cat) => {
                       const isSelected = selectedCategoryId === cat.id;
                       return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCategoryId(cat.id);
-                            if (autoSaveOnCategoryTap && calculatedAmount > 0) {
-                              handleSave(cat.id);
-                            }
-                          }}
-                          className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-500/20 border-emerald-500 text-white scale-[1.03] shadow-md'
-                              : 'bg-slate-800/50 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                          }`}
-                        >
-                          <span className="text-2xl mb-1">{cat.icon}</span>
-                          <span className="text-xs font-semibold leading-tight line-clamp-1 text-center">
-                            {cat.name.split('/')[0].trim()}
-                          </span>
-                        </button>
+                        <div key={cat.id} className="relative group">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isManageCatMode) {
+                                handleQuickDeleteCategory(cat.id, cat.name);
+                                return;
+                              }
+                              setSelectedCategoryId(cat.id);
+                              if (autoSaveOnCategoryTap && calculatedAmount > 0) {
+                                handleSave(cat.id);
+                              }
+                            }}
+                            className={`w-full flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                              isManageCatMode
+                                ? 'bg-rose-500/10 border-rose-500/40 hover:bg-rose-500/20'
+                                : isSelected
+                                ? 'bg-emerald-500/20 border-emerald-500 text-white scale-[1.03] shadow-md'
+                                : 'bg-slate-800/50 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                            }`}
+                          >
+                            <span className="text-2xl mb-1">{cat.icon}</span>
+                            <span className="text-xs font-semibold leading-tight line-clamp-1 text-center">
+                              {cat.name}
+                            </span>
+                          </button>
+
+                          {isManageCatMode && (
+                            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center shadow pointer-events-none">
+                              <Trash2 className="w-3 h-3" />
+                            </span>
+                          )}
+                        </div>
                       );
                     })}
+
+                    {/* Nút "+ Thêm danh mục" ngay trên lưới */}
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCat(!isAddingCat)}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl border border-dashed border-emerald-500/50 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400 transition cursor-pointer"
+                    >
+                      <Plus className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-bold">Thêm mục</span>
+                    </button>
                   </div>
+
+                  {/* Form nhỏ thêm danh mục ngay tại chỗ */}
+                  {isAddingCat && (
+                    <form
+                      onSubmit={handleQuickAddCategory}
+                      className="mt-3 p-3.5 rounded-2xl bg-slate-950/90 border border-emerald-500/40 space-y-2.5 animate-fadeIn"
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
+                        <span>Tạo danh mục {txType === 'INCOME' ? 'Thu nhập' : 'Chi tiêu'} mới:</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingCat(false)}
+                          className="text-slate-400 hover:text-white"
+                        >
+                          Đóng
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={newCatIcon}
+                          onChange={(e) => setNewCatIcon(e.target.value)}
+                          className="bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-lg"
+                        >
+                          {QUICK_CATEGORY_ICONS.map((ic) => (
+                            <option key={ic} value={ic}>
+                              {ic}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          value={newCatName}
+                          onChange={(e) => setNewCatName(e.target.value)}
+                          placeholder="Tên danh mục (VD: Tiền nhà, Học thêm...)"
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none"
+                          autoFocus
+                        />
+                        {txType === 'EXPENSE' && (
+                          <select
+                            value={newCatJar}
+                            onChange={(e) => setNewCatJar(e.target.value as JarCode)}
+                            className="bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200"
+                            title="Thuộc Hũ tài chính nào"
+                          >
+                            <option value="NEC">🏠 Thiết yếu</option>
+                            <option value="EDUC">📚 Giáo dục</option>
+                            <option value="PLAY">🎉 Hưởng thụ</option>
+                            <option value="FFA">📈 Đầu tư</option>
+                            <option value="LTSS">💎 Tiết kiệm</option>
+                            <option value="GIVE">🎁 Cho đi</option>
+                          </select>
+                        )}
+                        <button
+                          type="submit"
+                          className="px-3.5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs sm:text-sm cursor-pointer shrink-0"
+                        >
+                          Tạo
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </>
               ) : (
                 <div className="space-y-3 py-2">
@@ -306,7 +449,7 @@ export const QuickAddModal: React.FC = () => {
               )}
             </div>
 
-            {/* Tuỳ chọn Tối giản: Chọn Nguồn tiền + Chọn Người dùng (nếu có) + Ngày & Ghi chú */}
+            {/* Tuỳ chọn Tối giản: Chọn Nguồn tiền + Chọn Người dùng + Ngày & Ghi chú */}
             <div className="mt-4 pt-3 border-t border-slate-800 space-y-2.5">
               {(wallets.length > 0 || members.length > 0) && (
                 <div className="flex flex-wrap items-center gap-2">
