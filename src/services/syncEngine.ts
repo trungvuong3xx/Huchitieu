@@ -1,4 +1,4 @@
-import { db } from '../db/database';
+import { db, type MemberRecord } from '../db/database';
 import { useAppStore } from '../store/useAppStore';
 import type { Transaction, Wallet, Category, Budget } from '../types';
 
@@ -41,6 +41,7 @@ export async function syncWithGoogleSheets(forceFullSync = false): Promise<{
     const wallets = await db.wallets.toArray();
     const categories = await db.categories.toArray();
     const budgets = await db.budgets.toArray();
+    const members = await db.members.toArray();
 
     // 2. Gửi POST request lên Google Apps Script Web App
     // Lưu ý: Dùng Content-Type text/plain để tránh lỗi CORS Preflight (OPTIONS) của Google Apps Script
@@ -52,6 +53,7 @@ export async function syncWithGoogleSheets(forceFullSync = false): Promise<{
         wallets: forceFullSync ? wallets : [],
         categories: forceFullSync ? categories : [],
         budgets,
+        members,
       },
     };
 
@@ -75,7 +77,7 @@ export async function syncWithGoogleSheets(forceFullSync = false): Promise<{
     let pulledCount = 0;
 
     // 3. Đánh dấu các giao dịch đã đẩy lên là SYNCED
-    await db.transaction('rw', [db.transactions, db.wallets, db.categories, db.budgets], async () => {
+    await db.transaction('rw', [db.transactions, db.wallets, db.categories, db.budgets, db.members], async () => {
       for (const tx of pendingTransactions) {
         await db.transactions.update(tx.id, { sync_status: 'SYNCED' });
       }
@@ -139,6 +141,18 @@ export async function syncWithGoogleSheets(forceFullSync = false): Promise<{
           });
         }
       }
+
+      // Merge Members nếu có
+      const remoteMembers: MemberRecord[] = result.data?.members || [];
+      for (const rm of remoteMembers) {
+        if (!rm?.id) continue;
+        const localM = await db.members.get(rm.id);
+        if (!localM) {
+          await db.members.put(rm);
+        } else if (localM.name !== rm.name || localM.avatar !== rm.avatar) {
+          await db.members.put(rm);
+        }
+      }
     });
 
     const nowISO = new Date().toISOString();
@@ -167,19 +181,20 @@ export async function syncWithGoogleSheets(forceFullSync = false): Promise<{
  * Xuất toàn bộ Database ra file JSON (Lớp bảo vệ Backup thứ 3)
  */
 export async function exportBackupJSON(): Promise<string> {
-  const [wallets, categories, transactions, budgets, presets] = await Promise.all([
+  const [wallets, categories, transactions, budgets, presets, members] = await Promise.all([
     db.wallets.toArray(),
     db.categories.toArray(),
     db.transactions.toArray(),
     db.budgets.toArray(),
     db.presets.toArray(),
+    db.members.toArray(),
   ]);
 
   const backupPayload = {
     version: 1,
     exported_at: new Date().toISOString(),
     app: 'HuChiTieuGiaDinh',
-    data: { wallets, categories, transactions, budgets, presets },
+    data: { wallets, categories, transactions, budgets, presets, members },
   };
 
   return JSON.stringify(backupPayload, null, 2);
@@ -194,17 +209,19 @@ export async function importBackupJSON(jsonString: string): Promise<void> {
     throw new Error('File Backup không đúng định dạng Hũ Chi Tiêu Gia Đình!');
   }
 
-  await db.transaction('rw', [db.wallets, db.categories, db.transactions, db.budgets, db.presets], async () => {
+  await db.transaction('rw', [db.wallets, db.categories, db.transactions, db.budgets, db.presets, db.members], async () => {
     await db.wallets.clear();
     await db.categories.clear();
     await db.transactions.clear();
     await db.budgets.clear();
     await db.presets.clear();
+    await db.members.clear();
 
     if (parsed.data.wallets?.length) await db.wallets.bulkPut(parsed.data.wallets);
     if (parsed.data.categories?.length) await db.categories.bulkPut(parsed.data.categories);
     if (parsed.data.transactions?.length) await db.transactions.bulkPut(parsed.data.transactions);
     if (parsed.data.budgets?.length) await db.budgets.bulkPut(parsed.data.budgets);
     if (parsed.data.presets?.length) await db.presets.bulkPut(parsed.data.presets);
+    if (parsed.data.members?.length) await db.members.bulkPut(parsed.data.members);
   });
 }

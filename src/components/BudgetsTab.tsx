@@ -47,7 +47,7 @@ export const BudgetsTab: React.FC = () => {
       const info = SIX_JARS_INFO[code];
       const recommendedLimit = Math.round((totalMonthIncome * info.defaultPct) / 100);
       const spent = spentByJar[code] || 0;
-      const pct = recommendedLimit > 0 ? Math.round((spent / recommendedLimit) * 100) : 0;
+      const pct = recommendedLimit > 0 ? Math.round((spent / recommendedLimit) * 100) : spent > 0 ? 100 : 0;
       return {
         code,
         ...info,
@@ -143,7 +143,9 @@ export const BudgetsTab: React.FC = () => {
                 <div className="mt-3">
                   <div className="flex items-baseline justify-between text-xs mb-1">
                     <span className="font-bold text-white">{formatCompactVND(jar.spent)}</span>
-                    <span className="text-slate-400">/ {formatCompactVND(jar.recommendedLimit)}</span>
+                    <span className="text-slate-400">
+                      {jar.recommendedLimit > 0 ? `/ ${formatCompactVND(jar.recommendedLimit)}` : '(Chưa có thu)'}
+                    </span>
                   </div>
                   <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                     <div

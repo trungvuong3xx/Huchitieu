@@ -38,7 +38,7 @@ export const DashboardTab: React.FC = () => {
 
   const isLoading = wallets === undefined || allTransactions === undefined;
 
-  // 1. Tính số dư thực tế của từng Nguồn tiền (Ví)
+  // 1. Tính số dư thực tế của từng Nguồn tiền (Ví) - Bảo vệ nghiêm ngặt chống ví rác/ví đã xóa
   const walletBalances = React.useMemo(() => {
     const map: Record<string, number> = {};
     if (!wallets || !allTransactions) return map;
@@ -47,15 +47,17 @@ export const DashboardTab: React.FC = () => {
       map[w.id] = w.initial_balance;
     }
     for (const tx of allTransactions) {
-      if (tx.type === 'INCOME') {
-        map[tx.wallet_id] = (map[tx.wallet_id] || 0) + tx.amount;
-      } else if (tx.type === 'EXPENSE') {
-        map[tx.wallet_id] = (map[tx.wallet_id] || 0) - tx.amount;
-      } else if (tx.type === 'TRANSFER') {
-        map[tx.wallet_id] = (map[tx.wallet_id] || 0) - tx.amount;
-        if (tx.to_wallet_id) {
-          map[tx.to_wallet_id] = (map[tx.to_wallet_id] || 0) + tx.amount;
+      if (map[tx.wallet_id] !== undefined) {
+        if (tx.type === 'INCOME') {
+          map[tx.wallet_id] += tx.amount;
+        } else if (tx.type === 'EXPENSE') {
+          map[tx.wallet_id] -= tx.amount;
+        } else if (tx.type === 'TRANSFER') {
+          map[tx.wallet_id] -= tx.amount;
         }
+      }
+      if (tx.type === 'TRANSFER' && tx.to_wallet_id && map[tx.to_wallet_id] !== undefined) {
+        map[tx.to_wallet_id] += tx.amount;
       }
     }
     return map;

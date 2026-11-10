@@ -134,6 +134,7 @@ export const SettingsTab: React.FC = () => {
     }
     setNewMemberName('');
     showToast(`✅ Đã thêm người dùng "${newMemberName.trim()}"`);
+    syncWithGoogleSheets(true).catch(() => {});
   };
 
   const handleSaveEditMember = async (id: string) => {
@@ -141,6 +142,7 @@ export const SettingsTab: React.FC = () => {
     await db.members.update(id, { name: editingMemberName.trim() });
     setEditingMemberId(null);
     showToast('✅ Đã đổi tên thành công');
+    syncWithGoogleSheets(true).catch(() => {});
   };
 
   const handleDeleteMember = async (id: string, name: string) => {
@@ -150,13 +152,14 @@ export const SettingsTab: React.FC = () => {
       setCurrentMember(remaining[0]?.id || '');
     }
     showToast(`🗑️ Đã xóa "${name}"`);
+    syncWithGoogleSheets(true).catch(() => {});
   };
 
   // --- XỬ LÝ NGUỒN TIỀN (VÍ) ---
   const handleAddWallet = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWalletName.trim()) return;
-    const initBal = parseInt(newWalletBalance.replace(/\D/g, ''), 10) || 0;
+    const initBal = parseInt(newWalletBalance.replace(/[^0-9\-]/g, ''), 10) || 0;
 
     await db.wallets.add({
       id: generateId('w'),
@@ -186,7 +189,7 @@ export const SettingsTab: React.FC = () => {
 
   const handleSaveEditWallet = async (id: string) => {
     if (!editWName.trim()) return;
-    const initBal = parseInt(editWBal.replace(/\D/g, ''), 10) || 0;
+    const initBal = parseInt(editWBal.replace(/[^0-9\-]/g, ''), 10) || 0;
     await db.wallets.update(id, {
       name: editWName.trim(),
       initial_balance: initBal,

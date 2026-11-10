@@ -87,11 +87,23 @@ export async function initializeDatabase() {
       await db.categories.bulkPut(DEFAULT_CATEGORIES);
     });
     localStorage.setItem(CLEAN_V3_KEY, 'true');
-    return;
   }
 
   const catCount = await db.categories.count();
   if (catCount === 0) {
     await db.categories.bulkPut(DEFAULT_CATEGORIES);
+  }
+
+  const memberCount = await db.members.count();
+  if (memberCount === 0) {
+    const defaultMembers: MemberRecord[] = [
+      { id: 'mem_1', name: 'Ba Thỏ', avatar: '👨🏻', color: '#10b981' },
+      { id: 'mem_2', name: 'Shiba', avatar: '👩🏻', color: '#ec4899' },
+    ];
+    await db.members.bulkPut(defaultMembers);
+    const savedMember = localStorage.getItem('huchitieu_current_member_v3');
+    if (!savedMember) {
+      localStorage.setItem('huchitieu_current_member_v3', 'mem_1');
+    }
   }
 }

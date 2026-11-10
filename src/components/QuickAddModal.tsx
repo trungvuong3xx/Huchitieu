@@ -46,6 +46,16 @@ export const QuickAddModal: React.FC = () => {
   const [newCatIcon, setNewCatIcon] = useState<string>('🛒');
   const [newCatJar, setNewCatJar] = useState<JarCode>('NEC');
 
+  const handleSwitchTxType = (type: TransactionType) => {
+    setTxType(type);
+    if (type !== 'TRANSFER') {
+      const targetCat = categories.find((c) => c.type === (type === 'INCOME' ? 'INCOME' : 'EXPENSE'));
+      if (targetCat) {
+        setSelectedCategoryId(targetCat.id);
+      }
+    }
+  };
+
   useEffect(() => {
     if (!isQuickAddOpen) return;
     setDate(getTodayLocalISO());
@@ -105,6 +115,23 @@ export const QuickAddModal: React.FC = () => {
       setExpression((prev) => prev + key);
       return;
     }
+    if (key === '000') {
+      if (!expression || /[+\-]$/.test(expression) || expression === '0') return;
+      if (expression.length >= 13) return;
+      setExpression((prev) => prev + '000');
+      return;
+    }
+    if (key === '0') {
+      if (expression === '0') return;
+      if (/[+\-]0$/.test(expression)) return;
+      if (expression.length >= 15) return;
+      setExpression((prev) => prev + '0');
+      return;
+    }
+    if (expression === '0') {
+      setExpression(key);
+      return;
+    }
     if (expression.length >= 15) return;
     setExpression((prev) => prev + key);
   };
@@ -138,15 +165,29 @@ export const QuickAddModal: React.FC = () => {
   };
 
   const handleSave = async (overrideCatId?: string) => {
+    if (wallets.length === 0) {
+      showToast('⚠️ Vui lòng tạo ít nhất 1 nguồn tiền trong Cài Đặt trước!');
+      return;
+    }
+
     const finalAmount = calculatedAmount;
     if (finalAmount <= 0) {
       showToast('⚠️ Vui lòng nhập số tiền lớn hơn 0đ');
       return;
     }
 
-    if (txType === 'TRANSFER' && selectedWalletId === toWalletId) {
-      showToast('⚠️ Nguồn tiền chuyển đi và nhận về phải khác nhau!');
+    const effectiveWalletId = selectedWalletId || wallets[0]?.id || '';
+    if (!effectiveWalletId) {
+      showToast('⚠️ Vui lòng chọn nguồn tiền!');
       return;
+    }
+
+    if (txType === 'TRANSFER') {
+      const effectiveToId = toWalletId || wallets.find((w) => w.id !== effectiveWalletId)?.id || '';
+      if (!effectiveToId || effectiveWalletId === effectiveToId) {
+        showToast('⚠️ Nguồn tiền chuyển đi và nhận về phải khác nhau!');
+        return;
+      }
     }
 
     const catId = txType === 'TRANSFER' ? 'TRANSFER' : overrideCatId || selectedCategoryId;
@@ -158,10 +199,10 @@ export const QuickAddModal: React.FC = () => {
       date,
       type: txType,
       amount: finalAmount,
-      wallet_id: selectedWalletId || 'default',
+      wallet_id: effectiveWalletId,
       to_wallet_id: txType === 'TRANSFER' ? toWalletId : undefined,
       category_id: catId,
-      member_id: currentMember || '',
+      member_id: currentMember || members[0]?.id || '',
       beneficiary: 'FAMILY',
       is_shared: true,
       note: note.trim(),
@@ -240,7 +281,7 @@ export const QuickAddModal: React.FC = () => {
           <div className="flex bg-slate-800/90 p-1 rounded-2xl gap-1">
             <button
               type="button"
-              onClick={() => setTxType('EXPENSE')}
+              onClick={() => handleSwitchTxType('EXPENSE')}
               className={`h-11 min-h-[44px] px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer active:scale-95 ${
                 txType === 'EXPENSE'
                   ? 'bg-rose-500 text-white shadow-sm'
@@ -252,7 +293,7 @@ export const QuickAddModal: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => setTxType('INCOME')}
+              onClick={() => handleSwitchTxType('INCOME')}
               className={`h-11 min-h-[44px] px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer active:scale-95 ${
                 txType === 'INCOME'
                   ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
@@ -265,7 +306,7 @@ export const QuickAddModal: React.FC = () => {
             {wallets.length >= 2 && (
               <button
                 type="button"
-                onClick={() => setTxType('TRANSFER')}
+                onClick={() => handleSwitchTxType('TRANSFER')}
                 className={`h-11 min-h-[44px] px-3.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
                   txType === 'TRANSFER'
                     ? 'bg-blue-500 text-white shadow-sm'

@@ -62,6 +62,12 @@ const SHEET_SCHEMA = {
     'alert_threshold',
     'updated_at',
   ],
+  Members: [
+    'id',
+    'name',
+    'avatar',
+    'color',
+  ],
 };
 
 /**
@@ -145,12 +151,16 @@ function doPost(e) {
     if (incoming.budgets && incoming.budgets.length > 0) {
       upsertRows('Budgets', incoming.budgets);
     }
+    if (incoming.members && incoming.members.length > 0) {
+      upsertRows('Members', incoming.members);
+    }
 
     // 2. Đọc dữ liệu từ Sheet trả về cho điện thoại (Lọc theo lastSyncTime nếu có để tối ưu tốc độ)
     const allTransactions = readRows('Transactions', lastSyncTime);
     const allWallets = readRows('Wallets', null);
     const allCategories = readRows('Categories', null);
     const allBudgets = readRows('Budgets', null);
+    const allMembers = readRows('Members', null);
 
     return ContentService.createTextOutput(
       JSON.stringify({
@@ -161,6 +171,7 @@ function doPost(e) {
           wallets: allWallets,
           categories: allCategories,
           budgets: allBudgets,
+          members: allMembers,
         },
       })
     ).setMimeType(ContentService.MimeType.JSON);
@@ -277,7 +288,10 @@ function readRows(sheetName, sinceDate) {
     }
 
     if (sinceDate && obj.updated_at) {
-      if (new Date(obj.updated_at) <= sinceDate) {
+      // Đệm an toàn 5 phút chống lệch đồng hồ giữa các thiết bị (clock-skew safe window)
+      var bufferMs = 5 * 60 * 1000;
+      var cutoff = new Date(sinceDate.getTime() - bufferMs);
+      if (new Date(obj.updated_at) <= cutoff) {
         continue;
       }
     }

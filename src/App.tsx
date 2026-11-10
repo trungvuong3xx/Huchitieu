@@ -29,12 +29,16 @@ export const App: React.FC = () => {
   const members = useLiveQuery(() => db.members.toArray(), []) || [];
 
   useEffect(() => {
-    initializeDatabase().then(() => {
+    initializeDatabase().then(async () => {
+      if (!currentMember) {
+        const firstMem = await db.members.toCollection().first();
+        if (firstMem) setCurrentMember(firstMem.id);
+      }
       if (scriptUrl) {
         syncWithGoogleSheets().catch(() => {});
       }
     });
-  }, []);
+  }, [currentMember]);
 
   const handleUndo = async (txId: string) => {
     await db.transactions.delete(txId);

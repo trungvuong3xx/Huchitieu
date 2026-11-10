@@ -31,6 +31,8 @@ html.light body {
 }
 
 html.light .bg-slate-950,
+html.light .bg-slate-950\/30,
+html.light .bg-slate-950\/40,
 html.light .bg-slate-950\/60,
 html.light .bg-slate-950\/70,
 html.light .bg-slate-950\/80,
@@ -39,6 +41,8 @@ html.light .bg-slate-950\/90 {
 }
 
 html.light .bg-slate-900,
+html.light .bg-slate-900\/30,
+html.light .bg-slate-900\/40,
 html.light .bg-slate-900\/50,
 html.light .bg-slate-900\/70,
 html.light .bg-slate-900\/80,
@@ -49,15 +53,19 @@ html.light .bg-slate-900\/95 {
 }
 
 html.light .bg-slate-800,
+html.light .bg-slate-800\/30,
+html.light .bg-slate-800\/40,
 html.light .bg-slate-800\/50,
 html.light .bg-slate-800\/60,
 html.light .bg-slate-800\/70,
 html.light .bg-slate-800\/80,
 html.light .bg-slate-800\/90 {
-  background-color: #f1f5f9 !important;
+  background-color: #e2e8f0 !important;
 }
 
 html.light .border-slate-800,
+html.light .border-slate-800\/40,
+html.light .border-slate-800\/50,
 html.light .border-slate-800\/60,
 html.light .border-slate-800\/80,
 html.light .border-slate-800\/90,
@@ -67,8 +75,20 @@ html.light .border-slate-700\/80 {
   border-color: #e2e8f0 !important;
 }
 
+html.light .divide-slate-800\/50 > :not([hidden]) ~ :not([hidden]),
 html.light .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) {
   border-color: #e2e8f0 !important;
+}
+
+html.light input,
+html.light select,
+html.light textarea {
+  color: #0f172a !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
 html.light .text-white,
