@@ -359,7 +359,7 @@ export const SettingsTab: React.FC = () => {
 
           {/* Nội dung bên trong khi thả xuống */}
           {openSections.users && (
-            <div className="p-5 sm:p-6 border-t border-slate-800/80 bg-slate-950/30 animate-fadeIn space-y-4">
+            <div className="p-5 sm:p-6 border-t border-slate-800/80 animate-fadeIn space-y-4">
               <p className="text-xs sm:text-sm text-slate-400">
                 Tự đặt tên người sử dụng (VD: Ba Thỏ, Mẹ Thỏ...). Bấm vào tên để chọn làm người đang thao tác trên thiết bị này.
               </p>
@@ -517,7 +517,7 @@ export const SettingsTab: React.FC = () => {
           </button>
 
           {openSections.wallets && (
-            <div className="p-5 sm:p-6 border-t border-slate-800/80 bg-slate-950/30 animate-fadeIn space-y-4">
+            <div className="p-5 sm:p-6 border-t border-slate-800/80 animate-fadeIn space-y-4">
               <p className="text-xs sm:text-sm text-slate-400">
                 Tạo các nguồn tiền thực tế của bạn. Bạn có thể sửa tên, sửa số dư ban đầu hoặc xóa bất kỳ ví nào.
               </p>
@@ -726,7 +726,7 @@ export const SettingsTab: React.FC = () => {
           </button>
 
           {openSections.categories && (
-            <div className="p-5 sm:p-6 border-t border-slate-800/80 bg-slate-950/30 animate-fadeIn space-y-4">
+            <div className="p-5 sm:p-6 border-t border-slate-800/80 animate-fadeIn space-y-4">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs sm:text-sm text-slate-400">
                   Tùy biến danh mục theo thói quen chi tiêu của gia đình bạn:
@@ -913,7 +913,7 @@ export const SettingsTab: React.FC = () => {
           </button>
 
           {openSections.sync && (
-            <div className="p-5 sm:p-6 border-t border-slate-800/80 bg-slate-950/30 animate-fadeIn space-y-3.5">
+            <div className="p-5 sm:p-6 border-t border-slate-800/80 animate-fadeIn space-y-3.5">
               <p className="text-xs sm:text-sm text-slate-400">
                 Dán đường dẫn <strong>Web App URL</strong> từ file Google Apps Script để các thiết bị tự động đồng bộ thu chi:
               </p>
@@ -982,7 +982,7 @@ export const SettingsTab: React.FC = () => {
           </button>
 
           {openSections.backup && (
-            <div className="p-5 sm:p-6 border-t border-slate-800/80 bg-slate-950/30 animate-fadeIn space-y-4">
+            <div className="p-5 sm:p-6 border-t border-slate-800/80 animate-fadeIn space-y-4">
               <p className="text-xs sm:text-sm text-slate-400">
                 Xuất toàn bộ giao dịch, nguồn tiền và cài đặt ra file <code>.JSON</code> độc lập để lưu trữ an toàn phòng khi đổi máy.
               </p>
@@ -1041,7 +1041,7 @@ export const SettingsTab: React.FC = () => {
           </button>
 
           {openSections.apk && (
-            <div className="p-5 sm:p-6 border-t border-slate-800/80 bg-slate-950/30 animate-fadeIn space-y-4">
+            <div className="p-5 sm:p-6 border-t border-slate-800/80 animate-fadeIn space-y-4">
               <p className="text-xs sm:text-sm text-slate-400">
                 File <code>HuChiTieu.apk</code> được GitHub Actions tự động biên dịch mới nhất từ mã nguồn. Bạn có thể bấm nút bên dưới để tải về cài trực tiếp:
               </p>

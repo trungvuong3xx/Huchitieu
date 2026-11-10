@@ -112,7 +112,8 @@ export const BudgetsTab: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-3">
+        {/* 6 Hũ: 1 cột trên điện thoại (thẻ ngang rộng rãi, dễ nhìn), 2 cột trên máy tính */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
           {jarsSummary.map((jar) => {
             const isOver = jar.pct >= 90;
             const isWarn = jar.pct >= 70 && jar.pct < 90;
@@ -199,26 +200,27 @@ export const BudgetsTab: React.FC = () => {
                         setEditingCatId(cat.id);
                         setEditAmountStr(limit > 0 ? String(limit) : '3000000');
                       }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition shrink-0 cursor-pointer"
+                      className="h-11 min-h-[44px] px-3.5 flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-bold transition shrink-0 cursor-pointer active:scale-95"
                     >
-                      <Edit3 className="w-3.5 h-3.5" /> Đặt trần
+                      <Edit3 className="w-4 h-4" /> Đặt trần
                     </button>
                   ) : (
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <input
                         type="text"
                         inputMode="numeric"
                         value={editAmountStr}
                         onChange={(e) => setEditAmountStr(e.target.value)}
-                        className="w-24 bg-slate-800 border border-emerald-500 rounded-xl px-2 py-1 text-xs font-bold text-white focus:outline-none"
+                        className="w-28 h-11 min-h-[44px] bg-slate-800 border border-emerald-500 rounded-xl px-3 text-xs sm:text-sm font-bold text-white focus:outline-none"
                         placeholder="5000000"
                       />
                       <button
                         type="button"
                         onClick={() => handleSaveBudget(cat.id, budgetId)}
-                        className="p-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold cursor-pointer"
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-emerald-500 text-slate-950 font-bold cursor-pointer active:scale-95"
+                        title="Lưu trần"
                       >
-                        <Save className="w-4 h-4" />
+                        <Save className="w-5 h-5" />
                       </button>
                     </div>
                   )}

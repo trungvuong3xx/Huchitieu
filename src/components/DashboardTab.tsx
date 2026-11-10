@@ -183,16 +183,16 @@ export const DashboardTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Danh sách Nguồn tiền / Ví */}
+          {/* Danh sách Nguồn tiền / Ví (Mobile cuộn ngang mượt mà, Desktop lưới 3 cột) */}
           {wallets && wallets.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5 relative z-10">
+            <div className="flex overflow-x-auto no-scrollbar gap-2.5 pb-1 mb-5 sm:grid sm:grid-cols-3 relative z-10">
               {wallets.map((w) => {
                 const bal = walletBalances[w.id] || 0;
                 const owner = members?.find((m) => m.id === w.owner_id);
                 return (
                   <div
                     key={w.id}
-                    className="group bg-slate-950/60 hover:bg-slate-800/50 border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-3 flex flex-col justify-between transition-all"
+                    className="group min-w-[135px] sm:min-w-0 flex-1 bg-slate-950/60 hover:bg-slate-800/50 border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-3 flex flex-col justify-between transition-all shrink-0 sm:shrink"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xl group-hover:scale-110 transition-transform">{w.icon}</span>
@@ -312,7 +312,7 @@ export const DashboardTab: React.FC = () => {
           <button
             type="button"
             onClick={openQuickAdd}
-            className="h-11 min-h-[44px] flex items-center gap-1.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition cursor-pointer ml-auto"
+            className="hidden sm:flex h-11 min-h-[44px] items-center gap-1.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition cursor-pointer ml-auto"
           >
             <Plus className="w-4 h-4 stroke-[2.8]" /> Ghi Thu Chi
           </button>

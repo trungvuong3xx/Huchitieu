@@ -159,45 +159,45 @@ export const AnalyticsTab: React.FC = () => {
           </div>
         </div>
 
-        {/* 3 Chế độ Báo cáo: Theo Danh Mục | Theo Ngày | Theo Tuần */}
+        {/* 3 Chế độ Báo cáo: Danh Mục | Theo Ngày | Theo Tuần */}
         <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 mb-5">
           <button
             type="button"
             onClick={() => setChartMode('CATEGORY')}
-            className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
-              chartMode === 'CATEGORY' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+            className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer truncate ${
+              chartMode === 'CATEGORY' ? 'bg-emerald-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
             }`}
           >
-            🍩 Theo Danh Mục
+            🍩 Danh Mục
           </button>
           <button
             type="button"
             onClick={() => setChartMode('DAILY')}
-            className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
-              chartMode === 'DAILY' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+            className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer truncate ${
+              chartMode === 'DAILY' ? 'bg-emerald-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
             }`}
           >
-            📅 Lịch Sử Theo Ngày
+            📅 Theo Ngày
           </button>
           <button
             type="button"
             onClick={() => setChartMode('CASHFLOW')}
-            className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
-              chartMode === 'CASHFLOW' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+            className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer truncate ${
+              chartMode === 'CASHFLOW' ? 'bg-emerald-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
             }`}
           >
             📊 Theo Tuần
           </button>
         </div>
 
-        {/* CHẾ ĐỘ 1: THEO DANH MỤC */}
+        {/* CHẾ ĐỘ 1: THEO DANH MỤC (Xếp dọc trên mobile, 2 cột trên desktop) */}
         {chartMode === 'CATEGORY' && (
           <div>
             {categoryBreakdown.length === 0 ? (
               <div className="py-14 text-center text-sm text-slate-500">Chưa có dữ liệu chi tiêu trong tháng này</div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-5">
-                <div className="h-64 relative">
+              <div className="flex flex-col sm:grid sm:grid-cols-2 items-center gap-5">
+                <div className="h-64 w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -239,8 +239,8 @@ export const AnalyticsTab: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Chú thích Danh mục */}
-                <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                {/* Chú thích Danh mục - Chiều rộng 100% trên mobile */}
+                <div className="space-y-2.5 w-full max-h-64 overflow-y-auto pr-1">
                   {categoryBreakdown.map((item) => {
                     const isSelected = selectedCategoryFilter === item.id;
                     return (

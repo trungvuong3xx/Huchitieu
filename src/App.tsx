@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Home, PieChart, PiggyBank, Settings, Plus, RefreshCw, Undo2, Sun, Moon } from 'lucide-react';
+import { App as CapApp } from '@capacitor/app';
 import { db, initializeDatabase } from './db/database';
 import { useAppStore, type ActiveTab } from './store/useAppStore';
 import { DashboardTab } from './components/DashboardTab';
@@ -27,6 +28,32 @@ export const App: React.FC = () => {
   } = useAppStore();
 
   const members = useLiveQuery(() => db.members.toArray(), []) || [];
+
+  // Lắng nghe nút Back cứng trên Android (Capacitor Native Back Button Handler)
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    try {
+      CapApp.addListener('backButton', () => {
+        const store = useAppStore.getState();
+        if (store.isQuickAddOpen) {
+          store.closeQuickAdd();
+          return;
+        }
+        if (store.activeTab !== 'dashboard') {
+          store.setActiveTab('dashboard');
+          return;
+        }
+        CapApp.exitApp();
+      }).then((handle) => {
+        cleanup = () => handle.remove();
+      });
+    } catch {
+      // Bỏ qua khi chạy trên trình duyệt web thông thường
+    }
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
 
   useEffect(() => {
     initializeDatabase().then(async () => {
@@ -243,7 +270,7 @@ export const App: React.FC = () => {
         )}
 
         {/* THANH ĐIỀU HƯỚNG ĐÁY THUMB ZONE (MOBILE < md) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800/90 px-3 py-1.5 z-40 flex items-center justify-around shadow-2xl">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800/90 px-3 py-1.5 safe-area-bottom z-40 flex items-center justify-around shadow-2xl">
           <button
             type="button"
             onClick={() => setActiveTab('dashboard')}
