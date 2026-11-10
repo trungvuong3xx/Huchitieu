@@ -5,15 +5,26 @@
 @layer base {
   html {
     font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   @media (min-width: 1024px) {
     html {
       font-size: 17px;
     }
   }
+
+  body {
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
 }
 
-/* Light mode automatic mapping for existing slate-950/900/800 classes */
+/* Tabular figures for numbers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Light mode seamless theme styling */
 html.light body {
   background-color: #f8fafc;
   color: #0f172a;
@@ -22,7 +33,8 @@ html.light body {
 html.light .bg-slate-950,
 html.light .bg-slate-950\/60,
 html.light .bg-slate-950\/70,
-html.light .bg-slate-950\/80 {
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/90 {
   background-color: #f1f5f9 !important;
 }
 
@@ -33,11 +45,12 @@ html.light .bg-slate-900\/80,
 html.light .bg-slate-900\/90,
 html.light .bg-slate-900\/95 {
   background-color: #ffffff !important;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
 }
 
 html.light .bg-slate-800,
 html.light .bg-slate-800\/50,
+html.light .bg-slate-800\/60,
 html.light .bg-slate-800\/70,
 html.light .bg-slate-800\/80,
 html.light .bg-slate-800\/90 {
@@ -105,7 +118,7 @@ html.light .text-blue-400 {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -113,6 +126,42 @@ html.light .text-blue-400 {
   }
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .animate-fadeIn {
-  animation: fadeIn 0.18s ease-out forwards;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+html.light .skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
