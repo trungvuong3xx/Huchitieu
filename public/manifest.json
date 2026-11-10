@@ -1,0 +1,10 @@
+{
+  "name": "Hũ Chi Tiêu Gia Đình",
+  "short_name": "HũChiTiêu",
+  "description": "Ứng dụng quản lý tài chính & 6 chiếc hũ cho gia đình Việt - Đồng bộ Google Sheets",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "orientation": "portrait"
+}
