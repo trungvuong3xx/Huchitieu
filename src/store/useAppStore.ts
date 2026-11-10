@@ -1,32 +1,36 @@
 import { create } from 'zustand';
-import type { MemberId, BeneficiaryId } from '../types';
 import { getCurrentMonthYear } from '../utils/formatters';
 
 export type ActiveTab = 'dashboard' | 'analytics' | 'budgets' | 'settings';
+export type ThemeMode = 'dark' | 'light';
 
 interface AppState {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+
+  // Giao diện Sáng / Tối
+  theme: ThemeMode;
+  toggleTheme: () => void;
 
   // Quick Add Modal state
   isQuickAddOpen: boolean;
   openQuickAdd: () => void;
   closeQuickAdd: () => void;
 
-  // Người đang cầm điện thoại thao tác (Lưu vào LocalStorage để mở lên là nhớ luôn)
-  currentMember: MemberId;
-  setCurrentMember: (member: MemberId) => void;
+  // Người đang thao tác
+  currentMember: string;
+  setCurrentMember: (member: string) => void;
 
   // Bộ lọc kỳ báo cáo (YYYY-MM)
   selectedMonthYear: string;
   setSelectedMonthYear: (monthYear: string) => void;
   shiftMonth: (delta: number) => void;
 
-  // Bộ lọc xem theo Thành viên hoặc Đối tượng thụ hưởng
-  filterMember: MemberId | 'ALL';
-  setFilterMember: (member: MemberId | 'ALL') => void;
-  filterBeneficiary: BeneficiaryId | 'ALL';
-  setFilterBeneficiary: (ben: BeneficiaryId | 'ALL') => void;
+  // Bộ lọc xem theo Thành viên
+  filterMember: string | 'ALL';
+  setFilterMember: (member: string | 'ALL') => void;
+  filterBeneficiary: string | 'ALL';
+  setFilterBeneficiary: (ben: string | 'ALL') => void;
   filterSharedOnly: 'ALL' | 'SHARED' | 'PERSONAL';
   setFilterSharedOnly: (mode: 'ALL' | 'SHARED' | 'PERSONAL') => void;
 
@@ -45,23 +49,41 @@ interface AppState {
 }
 
 const STORAGE_KEYS = {
-  MEMBER: 'huchitieu_current_member',
+  MEMBER: 'huchitieu_current_member_v3',
   SCRIPT_URL: 'huchitieu_google_script_url',
   LAST_SYNC: 'huchitieu_last_sync',
+  THEME: 'huchitieu_theme_mode',
 };
 
 export const DEFAULT_GOOGLE_SCRIPT_URL =
   'https://script.google.com/macros/s/AKfycbyU3e3ptN0WghBaeVW30ozYjhJutRwllhxHJpAJA507xG2mLfruIcoc5Lur_WPzEJjfCQ/exec';
 
+const savedTheme = (localStorage.getItem(STORAGE_KEYS.THEME) as ThemeMode) || 'dark';
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.remove('light', 'dark');
+  document.documentElement.classList.add(savedTheme);
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   activeTab: 'dashboard',
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  theme: savedTheme,
+  toggleTheme: () => {
+    const next: ThemeMode = get().theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(STORAGE_KEYS.THEME, next);
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('light', 'dark');
+      document.documentElement.classList.add(next);
+    }
+    set({ theme: next });
+  },
 
   isQuickAddOpen: false,
   openQuickAdd: () => set({ isQuickAddOpen: true }),
   closeQuickAdd: () => set({ isQuickAddOpen: false }),
 
-  currentMember: (localStorage.getItem(STORAGE_KEYS.MEMBER) as MemberId) || 'WIFE',
+  currentMember: localStorage.getItem(STORAGE_KEYS.MEMBER) || '',
   setCurrentMember: (member) => {
     localStorage.setItem(STORAGE_KEYS.MEMBER, member);
     set({ currentMember: member });

@@ -1,12 +1,12 @@
 export type TransactionType = 'EXPENSE' | 'INCOME' | 'TRANSFER';
 export type WalletType = 'CASH' | 'BANK' | 'EWALLET' | 'CREDIT';
 export type JarCode = 'NEC' | 'FFA' | 'EDUC' | 'LTSS' | 'PLAY' | 'GIVE';
-export type MemberId = 'HUSBAND' | 'WIFE' | 'FAMILY';
-export type BeneficiaryId = 'FAMILY' | 'KIDS' | 'HUSBAND' | 'WIFE' | 'PARENTS';
+export type MemberId = string;
+export type BeneficiaryId = string;
 export type SyncStatus = 'SYNCED' | 'PENDING' | 'ERROR';
 
 export interface Member {
-  id: MemberId;
+  id: string;
   name: string;
   avatar: string;
   color: string;
@@ -17,7 +17,7 @@ export interface Wallet {
   name: string;
   type: WalletType;
   initial_balance: number; // Integer VND
-  owner_id: MemberId;
+  owner_id: string;
   icon: string;
   color: string;
   is_archived: boolean;
@@ -43,9 +43,9 @@ export interface Transaction {
   wallet_id: string;
   to_wallet_id?: string; // Only for TRANSFER
   category_id: string; // 'TRANSFER' if type === 'TRANSFER'
-  member_id: MemberId; // Who paid
-  beneficiary: BeneficiaryId; // Who benefited (Gia đình / Con cái / Chồng / Vợ / Nội Ngoại)
-  is_shared: boolean; // Quỹ chung Gia đình (true) vs Chi tiêu Riêng (false)
+  member_id: string; // Who paid
+  beneficiary: string; // Who benefited
+  is_shared: boolean;
   note: string;
   is_deleted: boolean;
   sync_status: SyncStatus;
@@ -68,6 +68,6 @@ export interface QuickPreset {
   amount: number;
   category_id: string;
   wallet_id: string;
-  beneficiary: BeneficiaryId;
+  beneficiary: string;
   icon: string;
 }
