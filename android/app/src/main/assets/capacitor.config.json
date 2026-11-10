@@ -1,0 +1,8 @@
+{
+	"appId": "com.ntv.huchitieu",
+	"appName": "Hũ Chi Tiêu",
+	"webDir": "dist",
+	"server": {
+		"cleartext": true
+	}
+}

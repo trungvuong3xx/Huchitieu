@@ -14,6 +14,7 @@ import {
   Save,
   X,
   LayoutGrid,
+  Smartphone,
 } from 'lucide-react';
 import { db } from '../db/database';
 import { useAppStore } from '../store/useAppStore';
@@ -758,6 +759,26 @@ export const SettingsTab: React.FC = () => {
               <input type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
             </label>
           </div>
+        </div>
+
+        {/* 6. Tải File Cài Đặt Android APK Trực Tiếp */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6">
+          <div className="flex items-center gap-2.5 mb-2">
+            <Smartphone className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-base sm:text-lg font-bold text-white">Ứng Dụng Android (.APK)</h3>
+          </div>
+          <p className="text-sm text-slate-400 mb-4">
+            Tải trực tiếp file <code>HuChiTieu.apk</code> (tự động build mới nhất từ GitHub Releases) để cài lên điện thoại Android:
+          </p>
+
+          <a
+            href="https://github.com/trungvuong3xx/Huchitieu/releases/download/app-latest/HuChiTieu.apk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+          >
+            <Download className="w-4 h-4 stroke-[2.5]" /> Tải HuChiTieu.apk Cài Đặt Ngay
+          </a>
         </div>
       </div>
     </div>
