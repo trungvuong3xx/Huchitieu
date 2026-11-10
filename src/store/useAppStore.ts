@@ -50,6 +50,9 @@ const STORAGE_KEYS = {
   LAST_SYNC: 'huchitieu_last_sync',
 };
 
+export const DEFAULT_GOOGLE_SCRIPT_URL =
+  'https://script.google.com/macros/s/AKfycbyU3e3ptN0WghBaeVW30ozYjhJutRwllhxHJpAJA507xG2mLfruIcoc5Lur_WPzEJjfCQ/exec';
+
 export const useAppStore = create<AppState>((set, get) => ({
   activeTab: 'dashboard',
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -80,7 +83,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   filterSharedOnly: 'ALL',
   setFilterSharedOnly: (mode) => set({ filterSharedOnly: mode }),
 
-  scriptUrl: localStorage.getItem(STORAGE_KEYS.SCRIPT_URL) || '',
+  scriptUrl: localStorage.getItem(STORAGE_KEYS.SCRIPT_URL) || DEFAULT_GOOGLE_SCRIPT_URL,
   setScriptUrl: (url) => {
     const trimmed = url.trim();
     localStorage.setItem(STORAGE_KEYS.SCRIPT_URL, trimmed);
