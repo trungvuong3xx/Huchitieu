@@ -1,6 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Wallet, Category, Transaction, Budget, QuickPreset, Member, BeneficiaryId, JarCode } from '../types';
-import { getTodayLocalISO, getCurrentMonthYear } from '../utils/formatters';
 
 export const FAMILY_MEMBERS: Member[] = [
   { id: 'HUSBAND', name: 'Chồng', avatar: '👨🏻', color: '#3b82f6' },
@@ -51,7 +50,7 @@ export const DEFAULT_WALLETS: Wallet[] = [
     id: 'w_shared_bank',
     name: 'TK Chung Gia Đình',
     type: 'BANK',
-    initial_balance: 25_000_000,
+    initial_balance: 0,
     owner_id: 'FAMILY',
     icon: '🏦',
     color: '#10b981',
@@ -62,7 +61,7 @@ export const DEFAULT_WALLETS: Wallet[] = [
     id: 'w_wife_cash',
     name: 'Ví Tiền Mặt (Vợ)',
     type: 'CASH',
-    initial_balance: 3_000_000,
+    initial_balance: 0,
     owner_id: 'WIFE',
     icon: '👛',
     color: '#ec4899',
@@ -73,7 +72,7 @@ export const DEFAULT_WALLETS: Wallet[] = [
     id: 'w_husband_bank',
     name: 'Ví Điện Tử / Thẻ (Chồng)',
     type: 'EWALLET',
-    initial_balance: 5_000_000,
+    initial_balance: 0,
     owner_id: 'HUSBAND',
     icon: '💳',
     color: '#3b82f6',
@@ -108,94 +107,52 @@ export const DEFAULT_PRESETS: QuickPreset[] = [
   { id: 'pre_5', title: 'Gửi xe', amount: 10_000, category_id: 'cat_transport', wallet_id: 'w_wife_cash', beneficiary: 'FAMILY', icon: '🛵' },
 ];
 
+const CLEAN_SEED_VERSION_KEY = 'huchitieu_clean_zero_v2';
+
 export async function initializeDatabase() {
+  const isCleaned = localStorage.getItem(CLEAN_SEED_VERSION_KEY);
+
+  // Tự động dọn sạch dữ liệu mẫu cũ (25tr, 5tr, 3tr và 4 giao dịch mẫu) về 0đ
+  if (!isCleaned) {
+    await db.transaction('rw', [db.wallets, db.categories, db.presets, db.budgets, db.transactions], async () => {
+      // Xóa 4 giao dịch mẫu và ngân sách mẫu cũ nếu có
+      await db.transactions.bulkDelete(['tx_sample_1', 'tx_sample_2', 'tx_sample_3', 'tx_sample_4']);
+      await db.budgets.bulkDelete(['b_groceries', 'b_food', 'b_kids', 'b_bills', 'b_entertainment']);
+
+      // Đưa số dư ban đầu (initial_balance) của 3 ví mặc định về 0đ
+      const existingWallets = await db.wallets.toArray();
+      if (existingWallets.length === 0) {
+        await db.wallets.bulkPut(DEFAULT_WALLETS);
+      } else {
+        for (const w of existingWallets) {
+          if (
+            (w.id === 'w_shared_bank' && w.initial_balance === 25_000_000) ||
+            (w.id === 'w_wife_cash' && w.initial_balance === 3_000_000) ||
+            (w.id === 'w_husband_bank' && w.initial_balance === 5_000_000)
+          ) {
+            await db.wallets.update(w.id, {
+              initial_balance: 0,
+              updated_at: new Date().toISOString(),
+            });
+          }
+        }
+      }
+
+      const catCount = await db.categories.count();
+      if (catCount === 0) await db.categories.bulkPut(DEFAULT_CATEGORIES);
+
+      const presetCount = await db.presets.count();
+      if (presetCount === 0) await db.presets.bulkPut(DEFAULT_PRESETS);
+    });
+
+    localStorage.setItem(CLEAN_SEED_VERSION_KEY, 'true');
+    return;
+  }
+
   const walletCount = await db.wallets.count();
-  if (walletCount > 0) return;
-
-  const today = getTodayLocalISO();
-  const currentMonth = getCurrentMonthYear();
-  const nowISO = new Date().toISOString();
-
-  await db.transaction('rw', [db.wallets, db.categories, db.presets, db.budgets, db.transactions], async () => {
+  if (walletCount === 0) {
     await db.wallets.bulkPut(DEFAULT_WALLETS);
     await db.categories.bulkPut(DEFAULT_CATEGORIES);
     await db.presets.bulkPut(DEFAULT_PRESETS);
-
-    const sampleBudgets: Budget[] = [
-      { id: 'b_groceries', month_year: currentMonth, category_id: 'cat_groceries', amount_limit: 6_000_000, alert_threshold: 80, updated_at: nowISO },
-      { id: 'b_food', month_year: currentMonth, category_id: 'cat_food', amount_limit: 2_500_000, alert_threshold: 80, updated_at: nowISO },
-      { id: 'b_kids', month_year: currentMonth, category_id: 'cat_kids', amount_limit: 5_000_000, alert_threshold: 85, updated_at: nowISO },
-      { id: 'b_bills', month_year: currentMonth, category_id: 'cat_bills', amount_limit: 2_200_000, alert_threshold: 90, updated_at: nowISO },
-      { id: 'b_entertainment', month_year: currentMonth, category_id: 'cat_entertainment', amount_limit: 2_000_000, alert_threshold: 80, updated_at: nowISO },
-    ];
-    await db.budgets.bulkPut(sampleBudgets);
-
-    const sampleTransactions: Transaction[] = [
-      {
-        id: 'tx_sample_1',
-        date: today,
-        type: 'INCOME',
-        amount: 20_000_000,
-        wallet_id: 'w_shared_bank',
-        category_id: 'cat_salary_husband',
-        member_id: 'HUSBAND',
-        beneficiary: 'FAMILY',
-        is_shared: true,
-        note: 'Góp quỹ lương tháng này',
-        is_deleted: false,
-        sync_status: 'PENDING',
-        created_at: nowISO,
-        updated_at: nowISO,
-      },
-      {
-        id: 'tx_sample_2',
-        date: today,
-        type: 'EXPENSE',
-        amount: 285_000,
-        wallet_id: 'w_wife_cash',
-        category_id: 'cat_groceries',
-        member_id: 'WIFE',
-        beneficiary: 'FAMILY',
-        is_shared: true,
-        note: 'Mua thịt cá, rau củ WinMart',
-        is_deleted: false,
-        sync_status: 'PENDING',
-        created_at: nowISO,
-        updated_at: nowISO,
-      },
-      {
-        id: 'tx_sample_3',
-        date: today,
-        type: 'EXPENSE',
-        amount: 680_000,
-        wallet_id: 'w_shared_bank',
-        category_id: 'cat_kids',
-        member_id: 'WIFE',
-        beneficiary: 'KIDS',
-        is_shared: true,
-        note: 'Mua sữa bột và bỉm cho bé',
-        is_deleted: false,
-        sync_status: 'PENDING',
-        created_at: nowISO,
-        updated_at: nowISO,
-      },
-      {
-        id: 'tx_sample_4',
-        date: today,
-        type: 'EXPENSE',
-        amount: 45_000,
-        wallet_id: 'w_husband_bank',
-        category_id: 'cat_food',
-        member_id: 'HUSBAND',
-        beneficiary: 'HUSBAND',
-        is_shared: false,
-        note: 'Phở bò buổi sáng',
-        is_deleted: false,
-        sync_status: 'PENDING',
-        created_at: nowISO,
-        updated_at: nowISO,
-      },
-    ];
-    await db.transactions.bulkPut(sampleTransactions);
-  });
+  }
 }

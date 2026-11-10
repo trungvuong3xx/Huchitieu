@@ -22,8 +22,7 @@ export const BudgetsTab: React.FC = () => {
   );
 
   const totalMonthIncome = React.useMemo(() => {
-    const inc = monthTransactions.filter((t) => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-    return inc > 0 ? inc : 25_000_000;
+    return monthTransactions.filter((t) => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
   }, [monthTransactions]);
 
   const jarsSummary = React.useMemo(() => {

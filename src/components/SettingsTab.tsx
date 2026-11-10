@@ -35,6 +35,8 @@ export const SettingsTab: React.FC = () => {
   const [newWalletBalance, setNewWalletBalance] = useState('');
   const [newWalletOwner, setNewWalletOwner] = useState<MemberId>('FAMILY');
   const [newWalletType, setNewWalletType] = useState<WalletType>('BANK');
+  const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
+  const [editingWalletBal, setEditingWalletBal] = useState<string>('');
 
   const handleSaveUrlAndSync = async () => {
     setScriptUrl(urlInput);
@@ -211,23 +213,66 @@ export const SettingsTab: React.FC = () => {
         </div>
 
         <div className="space-y-2.5 mb-4">
-          {wallets.map((w) => (
-            <div
-              key={w.id}
-              className="flex items-center justify-between px-3.5 py-3 rounded-2xl bg-slate-950/60 border border-slate-800/80"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{w.icon}</span>
-                <div>
-                  <div className="text-xs sm:text-sm font-bold text-slate-200">{w.name}</div>
-                  <div className="text-[11px] text-slate-500">
-                    Số dư ban đầu: {formatVND(w.initial_balance)} • Sở hữu:{' '}
-                    {FAMILY_MEMBERS.find((m) => m.id === w.owner_id)?.name}
+          {wallets.map((w) => {
+            const isEditing = editingWalletId === w.id;
+            return (
+              <div
+                key={w.id}
+                className="flex items-center justify-between px-3.5 py-3 rounded-2xl bg-slate-950/60 border border-slate-800/80"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xl">{w.icon}</span>
+                  <div className="min-w-0">
+                    <div className="text-xs sm:text-sm font-bold text-slate-200 truncate">{w.name}</div>
+                    <div className="text-[11px] text-slate-500">
+                      Số dư đầu kỳ: <strong className="text-slate-300">{formatVND(w.initial_balance)}</strong> • Sở hữu:{' '}
+                      {FAMILY_MEMBERS.find((m) => m.id === w.owner_id)?.name}
+                    </div>
                   </div>
                 </div>
+
+                {!isEditing ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingWalletId(w.id);
+                      setEditingWalletBal(String(w.initial_balance));
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 shrink-0 cursor-pointer"
+                  >
+                    Sửa số dư đầu
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={editingWalletBal}
+                      onChange={(e) => setEditingWalletBal(e.target.value)}
+                      className="w-24 bg-slate-800 border border-emerald-500 rounded-xl px-2 py-1 text-xs font-bold text-white focus:outline-none"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const val = parseInt(editingWalletBal.replace(/\D/g, ''), 10) || 0;
+                        await db.wallets.update(w.id, {
+                          initial_balance: val,
+                          updated_at: new Date().toISOString(),
+                        });
+                        setEditingWalletId(null);
+                        showToast(`✅ Đã cập nhật số dư đầu kỳ ví "${w.name}" = ${formatVND(val)}`);
+                        syncWithGoogleSheets(true).catch(() => {});
+                      }}
+                      className="px-2.5 py-1 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold cursor-pointer"
+                    >
+                      Lưu
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <form onSubmit={handleAddWallet} className="space-y-2.5 pt-3 border-t border-slate-800">
