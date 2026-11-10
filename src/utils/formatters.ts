@@ -12,19 +12,24 @@ export function formatVND(amount: number, showSymbol = true): string {
 }
 
 /**
- * Định dạng rút gọn cho biểu đồ (VD: 1.500.000 -> "1.5tr", 45.000 -> "45k")
+ * Định dạng rút gọn cho biểu đồ (VD: 5.000.000.000 -> "5 tỷ", 1.500.000 -> "1.5 tr", 45.000 -> "45k")
  */
 export function formatCompactVND(amount: number): string {
   const abs = Math.abs(amount);
   const sign = amount < 0 ? '-' : '';
+
+  if (abs >= 1_000_000_000) {
+    const val = (abs / 1_000_000_000).toFixed(abs % 1_000_000_000 === 0 ? 0 : 1);
+    return `${sign}${val} tỷ`;
+  }
   if (abs >= 1_000_000) {
     const val = (abs / 1_000_000).toFixed(abs % 1_000_000 === 0 ? 0 : 1);
-    return `${sign}${val}tr`;
+    return `${sign}${val} tr`;
   }
   if (abs >= 1_000) {
     return `${sign}${Math.round(abs / 1_000)}k`;
   }
-  return `${sign}${abs}`;
+  return `${sign}${abs} đ`;
 }
 
 /**

@@ -31,6 +31,8 @@ export const DashboardTab: React.FC = () => {
     showToast,
   } = useAppStore();
 
+  const [selectedWalletFilter, setSelectedWalletFilter] = React.useState<string | null>(null);
+
   const wallets = useLiveQuery(() => db.wallets.filter((w) => !w.is_archived).toArray(), []);
   const categories = useLiveQuery(() => db.categories.toArray(), []);
   const members = useLiveQuery(() => db.members.toArray(), []);
@@ -65,17 +67,22 @@ export const DashboardTab: React.FC = () => {
 
   const totalNetWorth = Object.values(walletBalances).reduce((acc, v) => acc + v, 0);
 
-  // 2. Lọc giao dịch theo Tháng đang chọn & Thành viên
+  // 2. Lọc giao dịch theo Tháng đang chọn, Thành viên & Ví đang chọn
   const monthTransactions = React.useMemo(() => {
     if (!allTransactions) return [];
     return allTransactions
       .filter((tx) => tx.date.startsWith(selectedMonthYear))
       .filter((tx) => (filterMember === 'ALL' ? true : tx.member_id === filterMember))
+      .filter((tx) =>
+        selectedWalletFilter
+          ? tx.wallet_id === selectedWalletFilter || tx.to_wallet_id === selectedWalletFilter
+          : true
+      )
       .sort((a, b) => {
         if (a.date !== b.date) return b.date.localeCompare(a.date);
         return b.created_at.localeCompare(a.created_at);
       });
-  }, [allTransactions, selectedMonthYear, filterMember]);
+  }, [allTransactions, selectedMonthYear, filterMember, selectedWalletFilter]);
 
   // 3. Tính Tổng Thu & Tổng Chi trong tháng
   const { monthIncome, monthExpense } = React.useMemo(() => {
@@ -183,23 +190,37 @@ export const DashboardTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Danh sách Nguồn tiền / Ví (Mobile cuộn ngang mượt mà, Desktop lưới 3 cột) */}
+          {/* Danh sách Nguồn tiền / Ví (Bấm vào ví để lọc lịch sử riêng của ví đó) */}
           {wallets && wallets.length > 0 ? (
             <div className="flex overflow-x-auto no-scrollbar gap-2.5 pb-1 mb-5 sm:grid sm:grid-cols-3 relative z-10">
               {wallets.map((w) => {
                 const bal = walletBalances[w.id] || 0;
                 const owner = members?.find((m) => m.id === w.owner_id);
+                const isSelected = selectedWalletFilter === w.id;
                 return (
-                  <div
+                  <button
                     key={w.id}
-                    className="group min-w-[135px] sm:min-w-0 flex-1 bg-slate-950/60 hover:bg-slate-800/50 border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-3 flex flex-col justify-between transition-all shrink-0 sm:shrink"
+                    type="button"
+                    onClick={() => setSelectedWalletFilter((prev) => (prev === w.id ? null : w.id))}
+                    className={`group min-w-[135px] sm:min-w-0 flex-1 rounded-2xl p-3 flex flex-col justify-between text-left transition-all shrink-0 sm:shrink cursor-pointer active:scale-95 border ${
+                      isSelected
+                        ? 'bg-emerald-500/15 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md'
+                        : 'bg-slate-950/60 hover:bg-slate-800/50 border-slate-800/80 hover:border-slate-700/80'
+                    }`}
+                    title={isSelected ? `Đang lọc: ${w.name} (Bấm để hủy)` : `Xem lịch sử ví: ${w.name}`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between w-full">
                       <span className="text-xl group-hover:scale-110 transition-transform">{w.icon}</span>
-                      {owner && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 font-medium truncate max-w-[65px]">
-                          {owner.name}
+                      {isSelected ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500 text-slate-950 font-black">
+                          Đang lọc
                         </span>
+                      ) : (
+                        owner && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 font-medium truncate max-w-[65px]">
+                            {owner.name}
+                          </span>
+                        )
                       )}
                     </div>
                     <div className="mt-2.5">
@@ -214,7 +235,7 @@ export const DashboardTab: React.FC = () => {
                         {formatCompactVND(bal)}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -261,7 +282,7 @@ export const DashboardTab: React.FC = () => {
             </div>
 
             <div className="p-2 rounded-2xl bg-slate-950/40 border border-slate-800/40">
-              <div className="text-[11px] font-semibold text-slate-400">Còn Dư</div>
+              <div className="text-[11px] font-semibold text-slate-400">Chênh lệch tháng</div>
               <div
                 className={`text-base sm:text-lg font-black mt-1 tabular-nums truncate ${
                   monthIncome - monthExpense >= 0 ? 'text-sky-400' : 'text-amber-400'
@@ -317,6 +338,25 @@ export const DashboardTab: React.FC = () => {
             <Plus className="w-4 h-4 stroke-[2.8]" /> Ghi Thu Chi
           </button>
         </div>
+
+        {/* Thanh trạng thái khi đang chọn lọc theo 1 ví cụ thể */}
+        {selectedWalletFilter && (
+          <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs sm:text-sm font-bold text-emerald-400 animate-fadeIn">
+            <span className="flex items-center gap-2">
+              <span>💳</span>
+              <span>
+                Đang xem lịch sử ví: <strong className="text-white">{wallets?.find((w) => w.id === selectedWalletFilter)?.name}</strong>
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedWalletFilter(null)}
+              className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 transition cursor-pointer"
+            >
+              ✕ Bỏ lọc ví
+            </button>
+          </div>
+        )}
 
         {/* Danh sách Lịch sử Giao dịch theo Ngày */}
         {groupedByDate.length === 0 ? (
