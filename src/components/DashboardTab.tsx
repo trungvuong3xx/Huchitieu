@@ -140,7 +140,7 @@ export const DashboardTab: React.FC = () => {
       {/* CỘT TRÁI (5/12 trên Desktop): Thẻ KPI Tổng Thể, Nguồn Tiền & Chỉ Số Thu Chi */}
       <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-6">
         {/* Thẻ Tổng Tài Sản & Bộ Điều Hướng Tháng */}
-        <div className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900 to-slate-900/95 border border-slate-800/90 rounded-3xl p-5 sm:p-6 shadow-sm">
+        <div className="relative overflow-hidden bg-slate-900 border border-slate-800/90 rounded-3xl p-5 sm:p-6 shadow-sm">
           {/* Subtle Ambient Light effect */}
           <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
