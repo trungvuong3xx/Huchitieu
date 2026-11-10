@@ -21,13 +21,11 @@ export const BudgetsTab: React.FC = () => {
     [transactions, selectedMonthYear]
   );
 
-  // 1. Tính tổng Thu nhập tháng để phân bổ tự động vào 6 Chiếc Hũ (JARS)
   const totalMonthIncome = React.useMemo(() => {
     const inc = monthTransactions.filter((t) => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-    return inc > 0 ? inc : 25_000_000; // Mặc định tham chiếu 25tr nếu đầu tháng chưa nhập lương
+    return inc > 0 ? inc : 25_000_000;
   }, [monthTransactions]);
 
-  // 2. Thống kê tình hình sử dụng 6 Chiếc Hũ
   const jarsSummary = React.useMemo(() => {
     const catMap = new Map(categories.map((c) => [c.id, c]));
     const spentByJar: Record<JarCode, number> = {
@@ -61,7 +59,6 @@ export const BudgetsTab: React.FC = () => {
     });
   }, [categories, monthTransactions, totalMonthIncome]);
 
-  // 3. Thống kê Hạn mức theo từng Danh mục (Category Budgets)
   const categoryBudgetList = React.useMemo(() => {
     const spentByCat: Record<string, number> = {};
     for (const tx of monthTransactions) {
@@ -104,32 +101,32 @@ export const BudgetsTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 pb-24">
-      {/* Phần 1: Phương pháp 6 Chiếc Hũ Tài Chính Gia Đình */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pb-24 lg:pb-10 items-start">
+      {/* Phần 1 (5/12 trên Desktop): Phương pháp 6 Chiếc Hũ Tài Chính Gia Đình */}
+      <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h2 className="text-base font-bold text-white">🏺 6 Chiếc Hũ Tài Chính Gia Đình</h2>
+            <h2 className="text-base sm:text-lg font-bold text-white">🏺 6 Chiếc Hũ Tài Chính Gia Đình</h2>
             <p className="text-xs text-slate-400">
               Tính trên tổng thu nhập tháng: <strong className="text-emerald-400">{formatVND(totalMonthIncome)}</strong>
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5 mt-3">
+        <div className="grid grid-cols-2 gap-3 mt-3">
           {jarsSummary.map((jar) => {
             const isOver = jar.pct >= 90;
             const isWarn = jar.pct >= 70 && jar.pct < 90;
             return (
               <div
                 key={jar.code}
-                className="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-3 flex flex-col justify-between"
+                className="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-3.5 flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-base">{jar.icon}</span>
+                    <span className="text-lg">{jar.icon}</span>
                     <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         isOver
                           ? 'bg-rose-500/20 text-rose-400'
                           : isWarn
@@ -140,12 +137,12 @@ export const BudgetsTab: React.FC = () => {
                       {jar.pct}%
                     </span>
                   </div>
-                  <div className="text-xs font-bold text-slate-100 mt-1.5">{jar.name}</div>
-                  <div className="text-[10px] text-slate-500 line-clamp-1">{jar.desc}</div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-100 mt-1.5">{jar.name}</div>
+                  <div className="text-[11px] text-slate-500 line-clamp-1">{jar.desc}</div>
                 </div>
 
-                <div className="mt-2.5">
-                  <div className="flex items-baseline justify-between text-[11px] mb-1">
+                <div className="mt-3">
+                  <div className="flex items-baseline justify-between text-xs mb-1">
                     <span className="font-bold text-white">{formatCompactVND(jar.spent)}</span>
                     <span className="text-slate-400">/ {formatCompactVND(jar.recommendedLimit)}</span>
                   </div>
@@ -164,32 +161,32 @@ export const BudgetsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Phần 2: Hạn mức Chi tiêu theo từng Danh mục (Đặt trần & Cảnh báo) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4">
-        <div className="mb-3">
-          <h3 className="text-sm font-bold text-white">🎯 Trần Chi Tiêu Theo Danh Mục ({selectedMonthYear})</h3>
+      {/* Phần 2 (7/12 trên Desktop): Hạn mức Chi tiêu theo từng Danh mục */}
+      <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5">
+        <div className="mb-4">
+          <h3 className="text-base font-bold text-white">🎯 Trần Chi Tiêu Theo Danh Mục ({selectedMonthYear})</h3>
           <p className="text-xs text-slate-400">
             Đổi màu cảnh báo: <span className="text-emerald-400">Xanh (&lt;70%)</span> →{' '}
             <span className="text-amber-400">Vàng (70-90%)</span> → <span className="text-rose-400">Đỏ (&gt;90%)</span>
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {categoryBudgetList.map(({ cat, budgetId, limit, spent, pct }) => {
             const isEditing = editingCatId === cat.id;
             const barColor =
               pct >= 90 ? 'bg-rose-500' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-500';
 
             return (
-              <div key={cat.id} className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3">
+              <div key={cat.id} className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{cat.icon}</span>
-                    <div>
-                      <div className="text-xs font-bold text-slate-100">{cat.name}</div>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-xl shrink-0">{cat.icon}</span>
+                    <div className="min-w-0">
+                      <div className="text-xs sm:text-sm font-bold text-slate-100 truncate">{cat.name}</div>
                       <div className="text-[11px] text-slate-400">
-                        Đã chi: <strong className="text-slate-200">{formatVND(spent)}</strong> /{' '}
-                        {limit > 0 ? formatVND(limit) : 'Chưa đặt hạn mức'}
+                        Đã chi: <strong className="text-slate-200">{formatCompactVND(spent)}</strong> /{' '}
+                        {limit > 0 ? formatCompactVND(limit) : 'Chưa đặt'}
                       </div>
                     </div>
                   </div>
@@ -201,24 +198,24 @@ export const BudgetsTab: React.FC = () => {
                         setEditingCatId(cat.id);
                         setEditAmountStr(limit > 0 ? String(limit) : '3000000');
                       }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition shrink-0 cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" /> Đặt trần
                     </button>
                   ) : (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <input
                         type="text"
                         inputMode="numeric"
                         value={editAmountStr}
                         onChange={(e) => setEditAmountStr(e.target.value)}
-                        className="w-28 bg-slate-800 border border-emerald-500 rounded-xl px-2 py-1 text-xs font-bold text-white focus:outline-none"
-                        placeholder="VD: 5000000"
+                        className="w-24 bg-slate-800 border border-emerald-500 rounded-xl px-2 py-1 text-xs font-bold text-white focus:outline-none"
+                        placeholder="5000000"
                       />
                       <button
                         type="button"
                         onClick={() => handleSaveBudget(cat.id, budgetId)}
-                        className="p-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold"
+                        className="p-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold cursor-pointer"
                       >
                         <Save className="w-4 h-4" />
                       </button>
@@ -227,27 +224,27 @@ export const BudgetsTab: React.FC = () => {
                 </div>
 
                 {limit > 0 && (
-                  <div className="mt-2.5">
+                  <div className="mt-3">
                     <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                         style={{ width: `${Math.min(100, pct)}%` }}
                       />
                     </div>
-                    <div className="flex items-center justify-between text-[10px] mt-1">
+                    <div className="flex items-center justify-between text-[10px] mt-1.5">
                       {pct >= 90 ? (
                         <span className="text-rose-400 font-semibold flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" /> Cảnh báo: Sắp hoặc đã vượt trần ngân sách!
+                          <AlertTriangle className="w-3 h-3" /> Vượt/Sắp vượt ({pct}%)
                         </span>
                       ) : (
                         <span className="text-emerald-400 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Trong tầm kiểm soát ({pct}%)
+                          <CheckCircle2 className="w-3 h-3" /> An toàn ({pct}%)
                         </span>
                       )}
                       <span className="text-slate-400">
                         {limit - spent >= 0
-                          ? `Còn được tiêu: ${formatVND(limit - spent)}`
-                          : `Vượt hạn mức: ${formatVND(spent - limit)}`}
+                          ? `Còn: ${formatCompactVND(limit - spent)}`
+                          : `Vượt: ${formatCompactVND(spent - limit)}`}
                       </span>
                     </div>
                   </div>
